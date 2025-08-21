@@ -56,20 +56,23 @@ calculate_new_status = function(match_and_status_df){
   return(status_new)
 }
 
-if (file.exists("match_level_data")){
-  match_level_data = readRDS("match_level_data")
+if (file.exists("match_level_data.csv")){
+  match_level_data=read.csv("match_level_data.csv")
+  match_level_data$MatchId = as.double(match_level_data$MatchId)
+  match_level_data$MatchDate=ymd(match_level_data$MatchDate)
+  match_idx = max(match_level_data$MatchId) + 1
 } else {
-  stop("match_level_data does not exist")
+  stop("match_level_data.csv does not exist")
 }
 
-if (file.exists("player_results")){
-  player_results = readRDS("player_results")
+if (file.exists("player_results.csv")){
+  player_results = read.csv("player_results.csv")
 } else {
-  stop("player_results does not exist")
+  stop("player_results.csv does not exist")
 }
 
-if (file.exists("update_history")){
-  update_history = readRDS("update_history")
+if (file.exists("update_history.csv")){
+  update_history = read.csv("update_history.csv")
 } else {
   update_history = data.frame(Date = Date(),
                               MatchId = integer(),
@@ -104,5 +107,6 @@ for (match_id in match_ids_to_process){
   match_level_data[match_level_data$MatchId == match_id,]$Status = "Processed"
 }
 
-saveRDS(update_history, "update_history")
-saveRDS(match_level_data, "match_level_data")
+write.csv(update_history, "update_history.csv", row.names=FALSE)
+write.csv(player_results, "player_results.csv", row.names=FALSE)
+write.csv(match_level_data, "match_level_data.csv", row.names=FALSE)

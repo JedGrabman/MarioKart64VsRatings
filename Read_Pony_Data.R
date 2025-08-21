@@ -3,8 +3,10 @@ from_scratch = FALSE
 vs_results_URL = "https://docs.google.com/spreadsheets/d/1S5FvX5Z3jjvivywdzrviyXLKSfKxkoD-siB6rpyCsp8/"
 result_sheets = c("(2025) Matches")
 
-if (file.exists("match_level_data")){
-  match_level_data = readRDS("match_level_data")
+if (file.exists("match_level_data.csv")){
+  match_level_data=read.csv("match_level_data.csv")
+  match_level_data$MatchId = as.double(match_level_data$MatchId)
+  match_level_data$MatchDate=ymd(match_level_data$MatchDate)
   match_idx = max(match_level_data$MatchId) + 1
 } else {
   if (from_scratch){
@@ -17,8 +19,8 @@ if (file.exists("match_level_data")){
   }
 }
 
-if (file.exists("player_results")){
-  player_results = readRDS("player_results")
+if (file.exists("player_results.csv")){
+  player_results = read.csv("player_results.csv")
 } else {
   if (from_scratch){
     player_results = data.frame(MatchId = integer(),
@@ -28,7 +30,7 @@ if (file.exists("player_results")){
                                 PenaltyPoints = integer(),
                                 Total = integer())   
   } else {
-    stop("File player_results is expected, but does not exist")
+    stop("File player_results.csv is expected, but does not exist")
   }
 }
 
@@ -104,5 +106,5 @@ for (result_sheet in result_sheets){
   }
 }
 
-saveRDS(match_level_data, "match_level_data")
-saveRDS(player_results, "player_results")
+write.csv(match_level_data, "match_level_data.csv", row.names=FALSE)
+write.csv(player_results, "player_results.csv", row.names=FALSE)

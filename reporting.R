@@ -99,4 +99,4 @@ ratings_df = get_players_data(unique(player_results$Player), today(), update_his
                 arrange(desc(Rating))
 
 sheet_write(ratings_df, ratings_sheet_URL, "Standings")
-saveRDS(match_level_data, "match_level_data")
+write.csv(match_level_data, "match_level_data.csv", row.names=FALSE)
