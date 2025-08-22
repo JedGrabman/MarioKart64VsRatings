@@ -73,6 +73,7 @@ if (file.exists("player_results.csv")){
 
 if (file.exists("update_history.csv")){
   update_history = read.csv("update_history.csv")
+  update_history$MatchDate = as.Date(update_history$MatchDate)
 } else {
   update_history = data.frame(Date = Date(),
                               MatchId = integer(),
@@ -81,11 +82,29 @@ if (file.exists("update_history.csv")){
                               RD = double())
 }
 
+
+# If we are processing a match that is older than a previously discovered match
+# we reprocess matches that came after it due to changed ratings.
+# Technically, we only need to reprocess matches including players whose ratings
+# were affected (and then those that player with players with changed ratings,
+# etc), but its easier to just do all of them.
+first_match = match_level_data %>%
+                filter(Status == "Loaded") %>%
+                arrange(MatchDate, MatchId) %>%
+                slice_head(n = 1)
+
 match_ids_to_process = match_level_data %>%
-  filter(Status == "Loaded") %>%
-  arrange(MatchDate, MatchId) %>%
-  select(MatchId) %>%
-  unlist()
+                          filter(MatchDate >= first_match$MatchDate | 
+                                 (MatchDate == first_match$MatchDate) & MatchId >= first_match$MatchId) %>%
+                          filter(Status != "Invalid") %>%
+                          arrange(MatchDate, MatchId) %>%
+                          select(MatchId) %>%
+                          unlist()
+
+match_level_data[match_level_data$MatchId %in% match_ids_to_process,]$Status = "Loaded"
+update_history = update_history %>%
+                    filter(!(MatchId %in% match_ids_to_process))
+
 
 for (match_id in match_ids_to_process){
   match_level_data[match_level_data$MatchId == match_id,]$Status = "Processing"
