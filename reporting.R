@@ -93,7 +93,9 @@ for (month_idx in c(1:nrow(unreported_months))){
   match_level_data$Status[match_level_data$MatchId %in% match_ids_to_report] = "Reported"
 }
 
-ratings_df = get_players_data(unique(player_results$Player), today(), update_history) %>%
+ratings_df = get_players_data(unique(player_results$Player), 
+                                     max(match_level_data$MatchDate), 
+                                     update_history) %>%
                 filter(RD <= RD_cutoff_placement) %>%
                 mutate(Rating = Elo - 2 * RD) %>%
                 mutate(across(where(is.numeric), round)) %>%
