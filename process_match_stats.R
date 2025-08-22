@@ -1,3 +1,5 @@
+library(PlayerRatings)
+
 get_player_data = function(player, as_of_date, update_history, c_val = 0.5, match_id = Inf){
   if (player %in% update_history$Player){
     player_data = update_history %>%

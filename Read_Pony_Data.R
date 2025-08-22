@@ -1,3 +1,6 @@
+library(lubridate)
+library(dplyr)
+
 # Set to TRUE only if regenerating all data from scratch. 
 from_scratch = FALSE
 vs_results_URL = "https://docs.google.com/spreadsheets/d/1S5FvX5Z3jjvivywdzrviyXLKSfKxkoD-siB6rpyCsp8/"

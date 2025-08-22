@@ -1,3 +1,5 @@
+library(googlesheets4)
+
 ratings_sheet_URL = "https://docs.google.com/spreadsheets/d/1kF4QJiV2VrxIJC-6ciaQcC1CExTJ5KlRo3MztaN4W_Y/"
 existing_sheets = sheet_properties(ratings_sheet_URL)$name
 unreported_months = match_level_data %>%
