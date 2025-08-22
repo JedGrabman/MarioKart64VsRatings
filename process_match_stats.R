@@ -35,18 +35,20 @@ calculate_new_status = function(match_and_status_df){
                           player_1 = as.character(),
                           player_2 = as.character(),
                           score = as.double())
+  possible_points_per_opponent = 20
+  total_possible_points = 3 * possible_points_per_opponent
   for(player_idx in c(1:nrow(match_and_status_df))){
     player_df = match_and_status_df[player_idx,]
     player = player_df$Player
     opponent_df = match_and_status_df[-player_idx,] 
-    player_expected_points = sum(20  / (1 + 10**(-(player_df$Elo - opponent_df$Elo) / 400))) 
-    player_expected_score = player_expected_points / 60
-    dummy_rating = player_df$Elo + 400*log((1 / player_expected_score) - 1, 10)
+    player_expected_points = sum(possible_points_per_opponent  / (1 + 10**(-(player_df$Elo - opponent_df$Elo) / 400))) 
+    player_expected_score = player_expected_points / (3 * possible_points_per_opponent)
+    dummy_rating = player_df$Elo + 400 * log((1 / player_expected_score) - 1, 10)
     dummy_deviation = mean(opponent_df$RD**2)**0.5  
     dummy_name = paste0("Dummy_", player)
     status[(2 * player_idx) - 1,] = list(player, player_df$Elo, player_df$RD)
     status[2 * player_idx,] = list(dummy_name, dummy_rating, dummy_deviation)
-    match_data[player_idx,] = list(1, player, dummy_name, player_df$Total / 60)
+    match_data[player_idx,] = list(1, player, dummy_name, player_df$Total / (3 * possible_points_per_opponent))
   }
   status_new = glicko(match_data, status)$rating %>%
     filter(substr(Player, 0, 6) != "Dummy_") %>%
@@ -126,6 +128,6 @@ for (match_id in match_ids_to_process){
   match_level_data[match_level_data$MatchId == match_id,]$Status = "Processed"
 }
 
-write.csv(update_history, "update_history.csv", row.names=FALSE)
-write.csv(player_results, "player_results.csv", row.names=FALSE)
-write.csv(match_level_data, "match_level_data.csv", row.names=FALSE)
+write.csv(update_history, "update_history.csv", row.names = FALSE)
+write.csv(player_results, "player_results.csv", row.names = FALSE)
+write.csv(match_level_data, "match_level_data.csv", row.names = FALSE)

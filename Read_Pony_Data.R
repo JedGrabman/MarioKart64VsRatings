@@ -37,7 +37,7 @@ if (file.exists("player_results.csv")){
 create_match_df = function(match_data){
   players = match_data[,1]
   race_points = match_data[,2]
-  place_points = 4 * (rank(race_points) - 1)
+  place_points = 4 * (rank(race_points) - 1) # 3 for 1st, 2 for 2nd, etc.
   penalty_points = rep(0, 4)
   total_points = race_points + place_points + penalty_points
   
@@ -77,13 +77,16 @@ for (result_sheet in result_sheets){
       match_results[match_results == alias] = actual_name
     }
   }
-  match_cols = (ncol(match_results) +1) / 3
-  match_rows = (nrow(match_results) + 1) / 6
+  cols_per_match = 3
+  rows_per_match = 6
+  match_cols = (ncol(match_results) +1) / cols_per_match
+  match_rows = (nrow(match_results) + 1) / rows_per_match
+  race_points_per_match = 6 * 16
   
   for (j in 1:match_rows){
-    row_idx = 6 * (j - 1) + 2
+    row_idx = rows_per_match * (j - 1) + 2
     for (i in 1:match_cols){
-      col_idx = 3*(i - 1) + 1
+      col_idx = cols_per_match * (i - 1) + 1
       if (!(is.na(match_results[row_idx, col_idx]))){
         match_data_raw = match_results[row_idx:(row_idx + 3),col_idx:(col_idx + 1)]
         match_df = create_match_df(match_data_raw)
@@ -93,18 +96,17 @@ for (result_sheet in result_sheets){
           match_level_data[match_level_row_idx,] = list(match_idx, match_date, "Loading")
           match_df$MatchId = match_idx
           player_results = rbind(player_results, match_df)
-          if (sum(match_df$RacePoints)==96){
+          if (sum(match_df$RacePoints) == race_points_per_match){
             match_level_data[match_level_row_idx,]$Status = "Loaded"
-            match_idx = match_idx + 1
           } else {
             match_level_data[match_level_row_idx,]$Status = "Invalid"
-            match_idx = match_idx + 1
           }
+          match_idx = match_idx + 1
         }
       }
     }
   }
 }
 
-write.csv(match_level_data, "match_level_data.csv", row.names=FALSE)
-write.csv(player_results, "player_results.csv", row.names=FALSE)
+write.csv(match_level_data, "match_level_data.csv", row.names = FALSE)
+write.csv(player_results, "player_results.csv", row.names = FALSE)
