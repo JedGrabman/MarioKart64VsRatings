@@ -68,6 +68,7 @@ is_match_known = function(match_df, match_date, player_results){
 aliases = list()
 aliases["Grey"] = "grey"
 aliases["Nico"] = "Nicocrack"
+aliases["Justase"] = "justase"
 
 for (result_sheet in result_sheets){
   match_results = read_sheet(vs_results_URL, 
@@ -109,6 +110,16 @@ for (result_sheet in result_sheets){
       }
     }
   }
+}
+
+player_names = sort(unique(player_results$Player))
+lowercase_player_names = tolower(player_names)
+if (any(duplicated(lowercase_player_names))){
+  duplicated_names = lowercase_player_names[which(duplicated(lowercase_player_names))]
+  dup_name_string = paste(player_names[which(tolower(player_names) %in% duplicated_names)], 
+                          collapse = ", ")
+  stop(paste("The following names appear to be duplicates: ", dup_name_string))
+  
 }
 
 write.csv(match_level_data, "match_level_data.csv", row.names = FALSE)
