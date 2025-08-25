@@ -1,5 +1,6 @@
 library(lubridate)
 library(dplyr)
+library(googlesheets4)
 
 # Set to TRUE only if regenerating all data from scratch. 
 from_scratch = FALSE
