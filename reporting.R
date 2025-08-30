@@ -37,17 +37,15 @@ for (month_idx in c(1:nrow(unreported_months))){
     match_date = (vs_ratings$match_level_data %>% 
                     filter(MatchId == match_id) %>% 
                     select(MatchDate))[1,]
-    status_match_before = get_players_data(players, 
+    status_match_before = vs_ratings$get_players_data(players, 
                                            match_date, 
-                                           vs_ratings$update_history, 
                                            match_id = match_id)
     status_match_before = status_match_before %>%
       mutate(Rating = ifelse(RD >= RD_cutoff_placement, NA, Elo - 2 * RD)) %>%
       mutate(across(where(is.numeric), round)) %>%
       rename_with(function(x) paste0(x, "Before"), -where(is.character))
-    status_match_after = get_players_data(players, 
+    status_match_after = vs_ratings$get_players_data(players, 
                                           match_date, 
-                                          vs_ratings$update_history, 
                                           match_id = match_id + 0.1)
     status_match_after = status_match_after %>%
       mutate(Rating = ifelse(RD >= RD_cutoff_placement, NA, Elo - 2 * RD)) %>%
@@ -93,9 +91,8 @@ for (month_idx in c(1:nrow(unreported_months))){
   vs_ratings$match_level_data$Status[vs_ratings$match_level_data$MatchId %in% match_ids_to_report] = "Reported"
 }
 
-ratings_df = get_players_data(unique(vs_ratings$player_results$Player), 
-                                     max(vs_ratings$match_level_data$MatchDate), 
-                                     vs_ratings$update_history) %>%
+ratings_df = vs_ratings$get_players_data(unique(vs_ratings$player_results$Player), 
+                                     max(vs_ratings$match_level_data$MatchDate)) %>%
                 filter(RD <= RD_cutoff_placement) %>%
                 mutate(Rating = Elo - 2 * RD) %>%
                 mutate(across(where(is.numeric), round)) %>%
