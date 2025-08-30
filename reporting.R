@@ -2,7 +2,7 @@ library(googlesheets4)
 
 ratings_sheet_URL = "https://docs.google.com/spreadsheets/d/1kF4QJiV2VrxIJC-6ciaQcC1CExTJ5KlRo3MztaN4W_Y/"
 existing_sheets = sheet_properties(ratings_sheet_URL)$name
-unreported_months = match_level_data %>%
+unreported_months = vs_ratings$match_level_data %>%
                       filter(Status == "Processed") %>%
                       mutate(Month = month(MatchDate), Year = year(MatchDate)) %>%
                       distinct(Year, Month) %>%
@@ -19,7 +19,7 @@ for (month_idx in c(1:nrow(unreported_months))){
   }
   sheet_copy(ratings_sheet_URL, from_sheet = "Template", to_sheet = month_sheet_name)
   
-  match_ids_to_report = match_level_data %>%
+  match_ids_to_report = vs_ratings$match_level_data %>%
     filter(Status %in% c("Processed", "Reported")) %>%
     arrange(MatchDate, MatchId) %>%
     mutate(Month = month(MatchDate), Year = year(MatchDate)) %>%
@@ -29,17 +29,17 @@ for (month_idx in c(1:nrow(unreported_months))){
     rev()
   reporting_df = data.frame(matrix(ncol = 7, nrow = 0))
   for (match_id in match_ids_to_report){
-    match_df = player_results %>%
+    match_df = vs_ratings$player_results %>%
       filter(MatchId == match_id) %>%
       select(Player, RacePoints, PlacePoints, Total) %>%
       arrange(desc(Total))
     players = match_df$Player
-    match_date = (match_level_data %>% 
+    match_date = (vs_ratings$match_level_data %>% 
                     filter(MatchId == match_id) %>% 
                     select(MatchDate))[1,]
     status_match_before = get_players_data(players, 
                                            match_date, 
-                                           update_history, 
+                                           vs_ratings$update_history, 
                                            match_id = match_id)
     status_match_before = status_match_before %>%
       mutate(Rating = ifelse(RD >= RD_cutoff_placement, NA, Elo - 2 * RD)) %>%
@@ -47,7 +47,7 @@ for (month_idx in c(1:nrow(unreported_months))){
       rename_with(function(x) paste0(x, "Before"), -where(is.character))
     status_match_after = get_players_data(players, 
                                           match_date, 
-                                          update_history, 
+                                          vs_ratings$update_history, 
                                           match_id = match_id + 0.1)
     status_match_after = status_match_after %>%
       mutate(Rating = ifelse(RD >= RD_cutoff_placement, NA, Elo - 2 * RD)) %>%
@@ -90,12 +90,12 @@ for (month_idx in c(1:nrow(unreported_months))){
                nrow(reporting_df), 
                ncol(reporting_df), 
                exact = TRUE)
-  match_level_data$Status[match_level_data$MatchId %in% match_ids_to_report] = "Reported"
+  vs_ratings$match_level_data$Status[vs_ratings$match_level_data$MatchId %in% match_ids_to_report] = "Reported"
 }
 
-ratings_df = get_players_data(unique(player_results$Player), 
-                                     max(match_level_data$MatchDate), 
-                                     update_history) %>%
+ratings_df = get_players_data(unique(vs_ratings$player_results$Player), 
+                                     max(vs_ratings$match_level_data$MatchDate), 
+                                     vs_ratings$update_history) %>%
                 filter(RD <= RD_cutoff_placement) %>%
                 mutate(Rating = Elo - 2 * RD) %>%
                 mutate(across(where(is.numeric), round)) %>%
@@ -103,4 +103,4 @@ ratings_df = get_players_data(unique(player_results$Player),
                 arrange(desc(Rating))
 
 sheet_write(ratings_df, ratings_sheet_URL, "Standings")
-write.csv(match_level_data, "match_level_data.csv", row.names = FALSE)
+write.csv(vs_ratings$match_level_data, "match_level_data.csv", row.names = FALSE)
