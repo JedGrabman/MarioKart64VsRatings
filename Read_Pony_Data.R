@@ -11,6 +11,8 @@ result_sheets = c("(2025) Matches")
 
 if(exists("match_level_data")){
   vs_ratings = vsData(match_level_data, player_results, update_history)  
+} else {
+  vs_ratings = vsData()
 }
 
 
