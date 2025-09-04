@@ -53,4 +53,5 @@ if (any(duplicated(lowercase_player_names))){
 write.csv(vs_ratings$match_level_data, "match_level_data.csv", row.names = FALSE)
 write.csv(vs_ratings$player_results, "player_results.csv", row.names = FALSE)
 vs_ratings$process_matches()
+write.csv(vs_ratings$match_level_data, "match_level_data.csv", row.names = FALSE)
 write.csv(vs_ratings$update_history, "update_history.csv", row.names = FALSE)

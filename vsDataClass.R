@@ -96,7 +96,7 @@ vsData = setRefClass("vsData",
                          }
                          return(players)
                        },
-                       get_player_data = function(player, as_of_date, c_val = 0.5, match_id = Inf){
+                       get_player_data = function(player, as_of_date, c_val_sq = 10, match_id = Inf){
                          if (player %in% .self$update_history$Player){
                            player_data = .self$update_history %>%
                              filter(MatchDate < as_of_date | 
@@ -107,7 +107,7 @@ vsData = setRefClass("vsData",
                                filter(MatchDate == max(MatchDate)) %>%
                                filter(MatchId == max(MatchId))
                              date_delta = as.double(as_of_date - player_data$MatchDate)
-                             player_data$RD = min(player_data$RD + c_val * date_delta, 300)
+                             player_data$RD = min(sqrt(player_data$RD**2 + ((c_val_sq) * date_delta)), 200)
                              player_data = player_data %>%
                                select(Player, Elo, RD)
                              return(player_data)
@@ -115,11 +115,11 @@ vsData = setRefClass("vsData",
                          }
                          player_data = data.frame(Player = player,
                                                   Elo = 1000,
-                                                  RD = 300)
+                                                  RD = 200)
                          return(player_data)
                        },
-                       get_players_data = function(players, as_of_date, c_val = 0.5, match_id = Inf){
-                         players_data = lapply(players, function(player) .self$get_player_data(player, as_of_date, c_val, match_id))
+                       get_players_data = function(players, as_of_date, c_val_sq = 10, match_id = Inf){
+                         players_data = lapply(players, function(player) .self$get_player_data(player, as_of_date, c_val_sq, match_id))
                          players_data_df = bind_rows(players_data)
                          return(players_data_df)
                        },
@@ -147,7 +147,7 @@ vsData = setRefClass("vsData",
                            match_data[player_idx,] = list(1, player, dummy_name, player_df$Total / (3 * possible_points_per_opponent))
                          }
                          # TODO: try setting cval to 0 here. It might be artificially boosting RD with the default 15 currently.
-                         status_new = glicko(match_data, status)$rating %>%
+                         status_new = glicko(match_data, status, cval = 0)$rating %>%
                            filter(substr(Player, 0, 6) != "Dummy_") %>%
                            select(Player, Rating, Deviation) %>%
                            rename(Elo = Rating) %>%

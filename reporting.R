@@ -8,7 +8,16 @@ unreported_months = vs_ratings$match_level_data %>%
                       distinct(Year, Month) %>%
                       arrange(Year, Month)
 
-RD_cutoff_placement = 150
+RD_cutoff_placement = 125
+
+compute_rating = function(elo, RD, stable_rd = 65, max_rd = 125){
+  results = rep(NA, length(elo))
+  results[RD < stable_rd] = elo[RD < stable_rd]
+  results[RD >= stable_rd] = elo[RD >= stable_rd] - 2 * (RD[RD >= stable_rd] - stable_rd)
+  results[RD > max_rd] = NA
+  return(results)
+}
+
 
 for (month_idx in c(1:nrow(unreported_months))){
   month_info = unreported_months[month_idx,]
@@ -41,14 +50,14 @@ for (month_idx in c(1:nrow(unreported_months))){
                                            match_date, 
                                            match_id = match_id)
     status_match_before = status_match_before %>%
-      mutate(Rating = ifelse(RD >= RD_cutoff_placement, NA, Elo - 2 * RD)) %>%
+      mutate(Rating = compute_rating(Elo, RD)) %>%
       mutate(across(where(is.numeric), round)) %>%
       rename_with(function(x) paste0(x, "Before"), -where(is.character))
     status_match_after = vs_ratings$get_players_data(players, 
                                           match_date, 
                                           match_id = match_id + 0.1)
     status_match_after = status_match_after %>%
-      mutate(Rating = ifelse(RD >= RD_cutoff_placement, NA, Elo - 2 * RD)) %>%
+      mutate(Rating = compute_rating(Elo, RD)) %>%
       mutate(across(where(is.numeric), round)) %>%
       rename_with(function(x) paste0(x, "After"), -where(is.character))
     summary_table = match_df %>%
@@ -94,7 +103,7 @@ for (month_idx in c(1:nrow(unreported_months))){
 ratings_df = vs_ratings$get_players_data(unique(vs_ratings$player_results$Player), 
                                      max(vs_ratings$match_level_data$MatchDate)) %>%
                 filter(RD <= RD_cutoff_placement) %>%
-                mutate(Rating = Elo - 2 * RD) %>%
+                mutate(Rating = compute_rating(Elo, RD)) %>%
                 mutate(across(where(is.numeric), round)) %>%
                 relocate(Rating, .before = Elo) %>%
                 arrange(desc(Rating))
