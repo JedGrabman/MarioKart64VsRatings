@@ -100,10 +100,26 @@ for (month_idx in c(1:nrow(unreported_months))){
   vs_ratings$match_level_data$Status[vs_ratings$match_level_data$MatchId %in% match_ids_to_report] = "Reported"
 }
 
+
+last_match_date = max(vs_ratings$match_level_data$MatchDate)
+# Must have played 5 games in last 60 days
+active_players = vs_ratings$player_results %>%
+                  left_join(vs_ratings$match_level_data,
+                            join_by(MatchId)) %>%
+                  filter(MatchDate >= last_match_date - 60) %>%
+                  filter(Status %in% c("Processed", "Reported")) %>%
+                  group_by(Player) %>%
+                  arrange(desc(MatchDate)) %>%
+                  slice(5) %>%
+                  ungroup() %>%
+                  select(Player) %>%
+                  unlist()
+
 ratings_df = vs_ratings$get_players_data(unique(vs_ratings$player_results$Player), 
-                                     max(vs_ratings$match_level_data$MatchDate)) %>%
-                filter(RD <= RD_cutoff_placement) %>%
+                                     last_match_date) %>%
                 mutate(Rating = compute_rating(Elo, RD)) %>%
+                filter(!is.na(Rating)) %>%
+                filter(Player %in% active_players) %>%
                 mutate(across(where(is.numeric), round)) %>%
                 relocate(Rating, .before = Elo) %>%
                 arrange(desc(Rating))
