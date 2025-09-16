@@ -6,14 +6,16 @@ vsData = setRefClass("vsData",
                       player_results = "data.frame",
                       update_history = "data.frame",
                       max_match_id = "integer",
+                      registered_players = "character",
                       aliases = "list"),
                      methods = list(
                        initialize = function(match_level_data = NULL, 
                                              player_results = NULL, 
-                                             update_history = NULL){
+                                             update_history = NULL,
+                                             registered_players = NULL){
                          .self$aliases = list("Grey" = "grey",
-                                              "Nico" = "Nicocrack",
-                                              "Justase" = "justase")
+                                              "Justase" = "justase",
+                                              "Pony" = "MrPonytale")
                          if (is.null(match_level_data)){
                            .self$match_level_data = data.frame(MatchId = integer(),
                                                                MatchDate = Date(),
@@ -42,6 +44,11 @@ vsData = setRefClass("vsData",
                          } else {
                            .self$update_history = update_history
                          }
+                         if (is.null(registered_players)){
+                           .self$registered_players = character(0)
+                         } else {
+                           .self$registered_players = registered_players
+                         }
                        },
                        create_match_df = function(players, race_points){
                          players = .self$dealias(players)
@@ -65,7 +72,7 @@ vsData = setRefClass("vsData",
                            .self$max_match_id = .self$max_match_id + 1L
                            match_level_row_idx = nrow(match_level_data) + 1
                            .self$match_level_data[match_level_row_idx,] = list(match_df$MatchId[1], match_date, "Loading")
-                           if (sum(match_df$RacePoints) == RACE_POINTS_PER_MATCH){
+                           if (sum(match_df$RacePoints) == RACE_POINTS_PER_MATCH & all(match_df$Player %in% .self$registered_players)){
                              match_level_data[match_level_row_idx,]$Status <<- "Loaded"
                            } else {
                              match_level_data[match_level_row_idx,]$Status <<- "Invalid"

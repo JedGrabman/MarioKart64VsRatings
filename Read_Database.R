@@ -26,3 +26,9 @@ if (file.exists("update_history.csv")){
   update_history = read.csv("update_history.csv")
   update_history$MatchDate = as.Date(update_history$MatchDate)
 }
+
+if (file.exists("RegisteredPlayers.txt")){
+  registered_players = read.table("RegisteredPlayers.txt")[,1]
+} else {
+  registered_players = character()
+}

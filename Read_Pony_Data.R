@@ -10,12 +10,12 @@ vs_results_URL = "https://docs.google.com/spreadsheets/d/1S5FvX5Z3jjvivywdzrviyX
 result_sheets = c("(2025) Matches")
 
 if(exists("match_level_data")){
-  vs_ratings = vsData(match_level_data, player_results, update_history)  
+  vs_ratings = vsData(match_level_data, player_results, update_history, registered_players)  
 } else {
-  vs_ratings = vsData()
+  vs_ratings = vsData(registered_players = registered_players)
 }
 
-
+max_match_id_former = vs_ratings$max_match_id
 for (result_sheet in result_sheets){
   match_results = read_sheet(vs_results_URL, 
                            result_sheet,
@@ -40,14 +40,25 @@ for (result_sheet in result_sheets){
   }
 }
 
-player_names = sort(unique(vs_ratings$player_results$Player))
-lowercase_player_names = tolower(player_names)
-if (any(duplicated(lowercase_player_names))){
-  duplicated_names = lowercase_player_names[which(duplicated(lowercase_player_names))]
-  dup_name_string = paste(player_names[which(tolower(player_names) %in% duplicated_names)], 
-                          collapse = ", ")
-  stop(paste("The following names appear to be duplicates: ", dup_name_string))
-  
+unregistered_players = vs_ratings$match_level_data %>% 
+  filter(MatchId > max_match_id_former) %>%
+  filter(Status == "Invalid") %>% 
+  left_join(vs_ratings$player_results, join_by(MatchId)) %>% 
+  select(Player) %>% 
+  unique() %>%
+  filter(!(Player %in% vs_ratings$registered_players)) %>%
+  arrange(Player) %>%
+  unlist()
+
+if (length(unregistered_players) > 0){
+  warning("The following players are unregistered and their matches will not count toward ratings:\n",
+          paste(unregistered_players, collapse = "\n"))
+
+  wrong_case_idxs = which(tolower(unregistered_players) %in% tolower(vs_ratings$registered_players))
+  if (length(wrong_case_idxs) > 0){
+    wrong_case_names = unregistered_players[wrong_case_idxs]
+    warning("The following names appear to be in the wrong case:\n", paste(wrong_case_names, collapse = "\n"))  
+  }  
 }
 
 write.csv(vs_ratings$match_level_data, "match_level_data.csv", row.names = FALSE)
