@@ -2,8 +2,8 @@ library(tidyr)
 library(kableExtra)
 library(stringr)
 
-date_new = today()
-date_old = today() - 30
+date_new = max(vs_ratings$match_level_data$MatchDate)
+date_old = date_new - 30
 
 rankings_new = vs_ratings$get_players_data(unique(vs_ratings$player_results$Player), 
                                          date_new) %>%
