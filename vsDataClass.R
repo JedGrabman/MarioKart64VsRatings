@@ -15,7 +15,8 @@ vsData = setRefClass("vsData",
                                              registered_players = NULL){
                          .self$aliases = list("Grey" = "grey",
                                               "Justase" = "justase",
-                                              "Pony" = "MrPonytale")
+                                              "Pony" = "MrPonytale",
+                                              "Elsuper100" = "ElSuper100")
                          if (is.null(match_level_data)){
                            .self$match_level_data = data.frame(MatchId = integer(),
                                                                MatchDate = Date(),
