@@ -16,7 +16,8 @@ vsData = setRefClass("vsData",
                          .self$aliases = list("Grey" = "grey",
                                               "Justase" = "justase",
                                               "Pony" = "MrPonytale",
-                                              "Elsuper100" = "ElSuper100")
+                                              "Elsuper100" = "ElSuper100",
+                                              "Mauro" = "Ratauro")
                          if (is.null(match_level_data)){
                            .self$match_level_data = data.frame(MatchId = integer(),
                                                                MatchDate = Date(),
