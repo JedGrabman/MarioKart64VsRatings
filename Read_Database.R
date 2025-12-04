@@ -28,7 +28,7 @@ if (file.exists("update_history.csv")){
 }
 
 if (file.exists("RegisteredPlayers.txt")){
-  registered_players = read.table("RegisteredPlayers.txt")[,1]
+  registered_players = read.delim("RegisteredPlayers.txt",header=FALSE,sep="\n")[,1]
 } else {
   registered_players = character()
 }
