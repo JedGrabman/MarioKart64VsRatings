@@ -1,2 +1,2 @@
-bot/secrets_bot.py
-dev/secrets_bot.py
+bot/dev/secrets_bot.py
+bot/prod/secrets_bot.py
