@@ -105,16 +105,22 @@ def bot_test():
             super().__init__(timeout = timeout)
         @discord.ui.select(cls = discord.ui.UserSelect, min_values = secrets_bot.get_num_players(), max_values = secrets_bot.get_num_players())
         async def select_callback(self, interaction:discord.Interaction, select): # the function called when the user is done selecting options
+            members = [user_data for user_data in interaction.data['resolved']['members'].values()]
             thread_id = interaction.channel.id
             match_dict[thread_id] = dict()
             match_dict[thread_id]["Submitter"] = interaction.user
             match_dict[thread_id]["Players"] = dict()
             for i in range(len(select.values)):
-                value = select.values[i]
-                player_display_name = value.display_name
-                player_id = value.id
+                member = members[i]
+                member_nick = member["nick"]
+                member_user = member["user"]
+                player_id = member_user["id"]
+                member_global_name = member_user["global_name"]
+                member_username = member_user["username"]
+                # Prioritize nickname, then global profile name, then username
+                player_name = member_nick or (member_global_name or member_username)
                 match_dict[thread_id]["Players"][i] = dict()
-                match_dict[thread_id]["Players"][i]["Name"] = player_display_name
+                match_dict[thread_id]["Players"][i]["Name"] = player_name
                 match_dict[thread_id]["Players"][i]["Id"] = player_id
             await interaction.response.send_modal(MatchDetails(thread_id = interaction.channel.id))
 
