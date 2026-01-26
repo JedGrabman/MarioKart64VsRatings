@@ -57,50 +57,36 @@ def bot_test():
             self.thread_id = thread_id
             super().__init__(*args, **kwargs)
 
-            self.add_item(discord.ui.TextInput(label = "Match Date (yyyy-mm-dd)"))
             for i in range(len(match_dict[thread_id]["Players"])):
                 player = match_dict[thread_id]["Players"][i]["Name"]
                 self.add_item(discord.ui.TextInput(label = player))
+            self.add_item(discord.ui.TextInput(label = "Video Link", required = False))
 
         def build_embed(self):
-            thread_id=self.thread_id
-            match_dict[thread_id]["embed"]=dict()
-            player_lines_tags = [""] * 4
-            player_lines_names = [""] * 4
+            thread_id = self.thread_id
+            match_dict[thread_id]["embed"] = dict()
+            num_players = secrets_bot.get_num_players()
+            player_lines_tags = [""] * num_players
+            player_lines_names = [""] * num_players
             for i in range(len(match_dict[thread_id]["Players"])):
                 player_data = match_dict[thread_id]["Players"][i]
                 player_lines_tags[i] = "**<@{}>**: {}".format(player_data["Id"], player_data["Score"])
                 player_lines_names[i] = "**{}**: {}".format(player_data["Name"], player_data["Score"])
-            match_summary_tags = "**Match Submission - <@{}>**".format(match_dict[thread_id]["Submitter"].id) + "\n\n" + "{}\n".format(match_dict[thread_id]["Date"]) + "\n".join(player_lines_tags)
-            match_summary_names = "**Match Submission - <@{}>**".format(match_dict[thread_id]["Submitter"].id) + "\n\n" + "{}\n".format(match_dict[thread_id]["Date"]) + "\n".join(player_lines_names)
+            today_string = datetime.date.today().isoformat()
+            match_summary_tags = "**Match Submission - <@{}>**".format(match_dict[thread_id]["Submitter"].id) + "\n\n" + "{}\n".format(today_string) + "\n".join(player_lines_tags) + "\n" + match_dict[thread_id]["Video"]
+            match_summary_names = "**Match Submission - <@{}>**".format(match_dict[thread_id]["Submitter"].id) + "\n\n" + "{}\n".format(today_string) + "\n".join(player_lines_names) + "\n" + match_dict[thread_id]["Video"]
             embed_tag = discord.Embed(description = match_summary_tags, color = 0x00ff00)
             embed_name = discord.Embed(description = match_summary_names, color = 0x00ff00)
             match_dict[thread_id]["embed"]["tag"] = embed_tag
             match_dict[thread_id]["embed"]["name"] = embed_name
 
-        def validate_date(self, date_text):
-            try:
-                return datetime.date.fromisoformat(date_text)
-            except ValueError:
-                return False
-
         async def on_submit(self, interaction:discord.Interaction):
-            thread_id=self.thread_id
+            num_players = secrets_bot.get_num_players()
+            thread_id = self.thread_id
             interaction_response = interaction.response
             submitted_values = [subcomponent["components"][0]["value"] for subcomponent in interaction.data["components"]]
-            match_date_string = submitted_values[0]
-            match_date = self.validate_date(match_date_string)
-            if not match_date:
-                await interaction_response.send_message(content = "I did not understand the match date: `{}`. Please try again (and make sure to use YYYY-MM-DD format).".format(match_date_string),view=PlayerSelection())
-                return
-            if match_date > datetime.date.today() + datetime.timedelta(1):
-                 await interaction_response.send_message('The provided date `{}` is in the future. Please try again.\nWho played in this match?'.format(match_date_string),view=PlayerSelection())
-                 return
-            if match_date < datetime.date.today() - datetime.timedelta(3):
-                 await interaction_response.send_message('The provided date `{}` is over 3 days old. If this date is accurate, please contact a moderator to submit the match. Or submit a more recent match now.\n\nWho played in this match?'.format(match_date_string),view=PlayerSelection())
-                 return
-            match_dict[thread_id]["Date"] = match_date_string
-            player_scores = submitted_values[1:len(submitted_values)]
+            player_scores = submitted_values[:num_players]
+            match_dict[thread_id]["Video"] = submitted_values[num_players]
             if not all([score.isdigit() for score in player_scores]):
                 player_scores_not_numeric = ", ".join([score for score in player_scores if not score.isdigit()])
                 await interaction_response.send_message('I could not understand the following score(s): `{}`. Please try again.\n\nWho played in this match?'.format(player_scores_not_numeric),view=PlayerSelection())
@@ -117,7 +103,7 @@ def bot_test():
     class PlayerSelection(discord.ui.View):
         def __init__(self, *, timeout = 180):
             super().__init__(timeout = timeout)
-        @discord.ui.select(cls = discord.ui.UserSelect, min_values = 4, max_values = 4)
+        @discord.ui.select(cls = discord.ui.UserSelect, min_values = secrets_bot.get_num_players(), max_values = secrets_bot.get_num_players())
         async def select_callback(self, interaction:discord.Interaction, select): # the function called when the user is done selecting options
             thread_id = interaction.channel.id
             match_dict[thread_id] = dict()
