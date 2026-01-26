@@ -111,10 +111,11 @@ def bot_test():
             match_dict[thread_id]["Players"] = dict()
             for i in range(len(select.values)):
                 value = select.values[i]
-                player = value.name
+                player_display_name = value.display_name
+                player_id = value.id
                 match_dict[thread_id]["Players"][i] = dict()
-                match_dict[thread_id]["Players"][i]["Name"] = value.name
-                match_dict[thread_id]["Players"][i]["Id"] = value.id
+                match_dict[thread_id]["Players"][i]["Name"] = player_display_name
+                match_dict[thread_id]["Players"][i]["Id"] = player_id
             await interaction.response.send_modal(MatchDetails(thread_id = interaction.channel.id))
 
     @client.command()
