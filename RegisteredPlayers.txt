@@ -1,12 +1,14 @@
 Alex
 Andrew
 Aria
+Ce_Mec
 Cheech
 Climatee
 Dan
 Dale
 Darien
 David
+Dcourt
 Denvar
 Dove
 El Sicario
@@ -18,6 +20,7 @@ GG
 Glass
 Grey
 Hattok
+Hero
 Ichuk Agab
 iMath
 Infa
@@ -31,10 +34,12 @@ Kenshin
 Kyle
 Lokyam
 LRXC
+Lucanine
 LuigiOn
 Mauro
 Mr.Nilo
 Nico
+ParisianPlayer
 Pokermon
 Pony
 SamuelZ
