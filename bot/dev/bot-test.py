@@ -105,13 +105,14 @@ def bot_test():
             super().__init__(timeout = timeout)
         @discord.ui.select(cls = discord.ui.UserSelect, min_values = secrets_bot.get_num_players(), max_values = secrets_bot.get_num_players())
         async def select_callback(self, interaction:discord.Interaction, select): # the function called when the user is done selecting options
-            members = [user_data for user_data in interaction.data['resolved']['members'].values()]
+            player_ids = interaction.data["values"]
             thread_id = interaction.channel.id
             match_dict[thread_id] = dict()
             match_dict[thread_id]["Submitter"] = interaction.user
             match_dict[thread_id]["Players"] = dict()
-            for i in range(len(select.values)):
-                member = members[i]
+            for i in range(len(player_ids)):
+                player_id = player_ids[i]
+                member = interaction.data['resolved']['members'][player_id]
                 member_nick = member["nick"]
                 member_user = member["user"]
                 player_id = member_user["id"]
