@@ -1,6 +1,7 @@
 import discord
 import datetime
 import secrets_bot
+from zoneinfo import ZoneInfo
 from discord.ext import commands 
 
 # Needs manage thread permission
@@ -72,7 +73,7 @@ def bot_test():
                 player_data = match_dict[thread_id]["Players"][i]
                 player_lines_tags[i] = "**<@{}>**: {}".format(player_data["Id"], player_data["Score"])
                 player_lines_names[i] = "**{}**: {}".format(player_data["Name"], player_data["Score"])
-            today_string = datetime.date.today().isoformat()
+            today_string = datetime.datetime.now(ZoneInfo('America/New_York')).date().isoformat()
             match_summary_tags = "**Match Submission - <@{}>**".format(match_dict[thread_id]["Submitter"].id) + "\n\n" + "{}\n".format(today_string) + "\n".join(player_lines_tags) + "\n" + match_dict[thread_id]["Video"]
             match_summary_names = "**Match Submission - <@{}>**".format(match_dict[thread_id]["Submitter"].id) + "\n\n" + "{}\n".format(today_string) + "\n".join(player_lines_names) + "\n" + match_dict[thread_id]["Video"]
             embed_tag = discord.Embed(description = match_summary_tags, color = 0x00ff00)
