@@ -1,8 +1,15 @@
 import discord
 import datetime
 import secrets_bot
+import gspread
 from zoneinfo import ZoneInfo
 from discord.ext import commands 
+
+def get_results_worksheet():
+    gc = gspread.service_account(filename='service_account.json')
+    wb = gc.open_by_key(secrets_bot.get_sheet_key())
+    worksheet = wb.worksheet("Results")
+    return worksheet
 
 # Needs manage thread permission
 def bot_test():
@@ -51,6 +58,11 @@ def bot_test():
             message = await results_channel.send(embed = match_dict[self.thread_id]["embed"]["tag"])
             await interaction.channel.edit(locked = True)
             await interaction.followup.send(content = "Thank you! Your submitted match can be seen [here]({}). This channel is now locked.".format(message.jump_url))
+            player_dict = match_dict[self.thread_id]["Players"]
+            results_matrix = [[player_dict[i]['Name'], player_dict[i]['Score']] for i in range(len(player_dict))]
+            match_summary_matrix = [['',''], [match_dict[self.thread_id]["date"], '']] + results_matrix
+            worksheet = get_results_worksheet()
+            worksheet.append_rows(match_summary_matrix)
             del match_dict[self.thread_id]
 
     class MatchDetails(discord.ui.Modal, title = "Match Submission"):
@@ -74,6 +86,7 @@ def bot_test():
                 player_lines_tags[i] = "**<@{}>**: {}".format(player_data["Id"], player_data["Score"])
                 player_lines_names[i] = "**{}**: {}".format(player_data["Name"], player_data["Score"])
             today_string = datetime.datetime.now(ZoneInfo('America/New_York')).date().isoformat()
+            match_dict[thread_id]["date"] = today_string
             match_summary_tags = "**Match Submission - <@{}>**".format(match_dict[thread_id]["Submitter"].id) + "\n\n" + "{}\n".format(today_string) + "\n".join(player_lines_tags) + "\n" + match_dict[thread_id]["Video"]
             match_summary_names = "**Match Submission - <@{}>**".format(match_dict[thread_id]["Submitter"].id) + "\n\n" + "{}\n".format(today_string) + "\n".join(player_lines_names) + "\n" + match_dict[thread_id]["Video"]
             embed_tag = discord.Embed(description = match_summary_tags, color = 0x00ff00)

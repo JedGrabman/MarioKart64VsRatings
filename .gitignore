@@ -1,2 +1,3 @@
 bot/dev/secrets_bot.py
 bot/prod/secrets_bot.py
+service_account.json
