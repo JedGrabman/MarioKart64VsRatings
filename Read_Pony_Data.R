@@ -6,8 +6,8 @@ library(dplyr)
 library(googlesheets4)
 
 RACE_POINTS_PER_MATCH = 6 * 16
-vs_results_URL = "https://docs.google.com/spreadsheets/d/1S5FvX5Z3jjvivywdzrviyXLKSfKxkoD-siB6rpyCsp8/"
-result_sheets = c("(2025) Matches", "(2026) Matches")
+vs_results_URL = "https://docs.google.com/spreadsheets/d/19Eu0c526y7egZkLNSsqtx7ph1ZzS-9dR-3vjRC3JXdA/"
+result_sheets = c("Results")
 
 if(exists("match_level_data")){
   vs_ratings = vsData(match_level_data, player_results, update_history, registered_players)  
@@ -33,7 +33,7 @@ for (result_sheet in result_sheets){
         match_data_raw = match_results[row_idx:(row_idx + 3),col_idx:(col_idx + 1)]
         players_match = match_data_raw[,1]
         race_points = match_data_raw[,2]
-        match_date = mdy(match_results[row_idx - 1, col_idx][[1]])
+        match_date = ymd(match_results[row_idx - 1, col_idx][[1]])
         vs_ratings$insert_new_match(players_match, race_points, match_date)
       }
     }
