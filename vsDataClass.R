@@ -1,6 +1,7 @@
 library(PlayerRatings)
 library(dplyr)
 
+POINTS_PER_RACE = 6
 vsData = setRefClass("vsData",
                       fields = list(match_level_data = "data.frame",
                       player_results = "data.frame",
@@ -54,7 +55,19 @@ vsData = setRefClass("vsData",
                        },
                        create_match_df = function(players, race_points){
                          players = .self$dealias(players)
-                         place_points = 4 * (rank(race_points) - 1) # 3 for 1st, 2 for 2nd, etc.
+                         race_points_total = sum(race_points)
+                         race_count = race_points_total / POINTS_PER_RACE
+                         # place points rewards focusing on match rank,
+                         # so scale with match progress
+                         if (race_count < 4){
+                           place_points_per_opponent = 0
+                         } else if (race_count < 12){
+                           place_points_per_opponent = 2
+                         } else {
+                           place_points_per_opponent = 4
+                         }
+                         # points per opponent you beat (rank handles ties by splitting points)
+                         place_points = place_points_per_opponent * (rank(race_points) - 1)
                          penalty_points = rep(0, 4)
                          total_points = race_points + place_points + penalty_points
                          match_id = .self$max_match_id + 1L
@@ -74,7 +87,17 @@ vsData = setRefClass("vsData",
                            .self$max_match_id = .self$max_match_id + 1L
                            match_level_row_idx = nrow(match_level_data) + 1
                            .self$match_level_data[match_level_row_idx,] = list(match_df$MatchId[1], match_date, "Loading")
-                           if (sum(match_df$RacePoints) == RACE_POINTS_PER_MATCH & all(match_df$Player %in% .self$registered_players)){
+                           total_race_points = sum(match_df$RacePoints)
+                           if (((total_race_points %% POINTS_PER_RACE) == 0) & 
+                               (total_race_points > 0) &
+                               (total_race_points <= RACE_POINTS_PER_MATCH) &
+                               all(match_df$Player %in% .self$registered_players)){
+                             if (sum(match_df$RacePoints) != RACE_POINTS_PER_MATCH){
+                               warning(paste("MatchId", 
+                                             match_df$MatchId[1], 
+                                             "has race points that do not sum to", 
+                                             RACE_POINTS_PER_MATCH))
+                             }
                              match_level_data[match_level_row_idx,]$Status <<- "Loaded"
                            } else {
                              match_level_data[match_level_row_idx,]$Status <<- "Invalid"
@@ -140,24 +163,31 @@ vsData = setRefClass("vsData",
                                                  player_1 = as.character(),
                                                  player_2 = as.character(),
                                                  score = as.double())
-                         possible_points_per_opponent = 20
+                         possible_points_per_opponent = sum(match_and_status_df$RacePoints + match_and_status_df$PlacePoints) / 6
                          total_possible_points = 3 * possible_points_per_opponent
                          for(player_idx in c(1:nrow(match_and_status_df))){
                            player_df = match_and_status_df[player_idx,]
                            player = player_df$Player
                            opponent_df = match_and_status_df[-player_idx,] 
-                           player_expected_points = sum(possible_points_per_opponent  / (1 + 10**(-(player_df$Elo - opponent_df$Elo) / 400))) 
-                           player_expected_score = player_expected_points / (3 * possible_points_per_opponent)
+                           player_expected_score = mean(1  / (1 + 10**(-(player_df$Elo - opponent_df$Elo) / 400)))
+                           # Make fake opponent for a 1v1 with the same expected points and ~RD
                            dummy_rating = player_df$Elo + 400 * log((1 / player_expected_score) - 1, 10)
                            dummy_deviation = mean(opponent_df$RD**2)**0.5  
                            dummy_name = paste0("Dummy_", player)
                            status[(2 * player_idx) - 1,] = list(player, player_df$Elo, player_df$RD)
                            status[2 * player_idx,] = list(dummy_name, dummy_rating, dummy_deviation)
-                           match_data[player_idx,] = list(1, player, dummy_name, player_df$Total / (3 * possible_points_per_opponent))
+                           match_data[player_idx,] = list(1, player, dummy_name, player_df$Total / total_possible_points)
                          }
-                         # TODO: try setting cval to 0 here. It might be artificially boosting RD with the default 15 currently.
+                         match_portion = possible_points_per_opponent / 20
+                         
+                         # RD decay over time handled in get_player_data
                          status_new = glicko(match_data, status, cval = 0)$rating %>%
                            filter(substr(Player, 0, 6) != "Dummy_") %>%
+                           left_join(status, join_by(Player), suffix = c("New", "Old")) %>%
+                           mutate(RatingDelta = RatingNew - RatingOld) %>%
+                           mutate(DeviationDelta2 = abs(DeviationNew**2 - DeviationOld**2)) %>%
+                           mutate(Rating = RatingOld + RatingDelta * match_portion) %>%
+                           mutate(Deviation = (DeviationOld**2 - (DeviationDelta2 * match_portion))**0.5) %>%
                            select(Player, Rating, Deviation) %>%
                            rename(Elo = Rating) %>%
                            rename(RD = Deviation)
@@ -190,8 +220,7 @@ vsData = setRefClass("vsData",
                            for (match_id in match_ids_to_process){
                              .self$match_level_data[.self$match_level_data$MatchId == match_id,]$Status = "Processing"
                              match_df = .self$player_results %>%
-                               filter(MatchId == match_id) %>%
-                               select(Player, Total)
+                               filter(MatchId == match_id)
                              match_date = (.self$match_level_data %>%
                                              filter(MatchId == match_id) %>%
                                              select(MatchDate))[1,]
@@ -199,8 +228,7 @@ vsData = setRefClass("vsData",
                              player_status_df = get_players_data(match_df$Player, match_date, match_id = match_id)
                              
                              match_and_status_df = match_df %>%
-                               inner_join(player_status_df, join_by(Player)) %>%
-                               select(Player, Total, Elo, RD)
+                               inner_join(player_status_df, join_by(Player))
                              status_new = calculate_new_status(match_and_status_df)
                              status_updates = cbind(MatchId = match_id, MatchDate = match_date, status_new)
                              .self$update_history = rbind(.self$update_history, status_updates) 
