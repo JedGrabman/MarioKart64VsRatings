@@ -65,6 +65,32 @@ def bot_test():
             worksheet.append_rows(match_summary_matrix)
             del match_dict[self.thread_id]
 
+    class LowTracksConfirmation(discord.ui.View):
+        def __init__(self, thread_id,*, timeout = 180):
+            self.results_channel = secrets_bot.get_results_channel()
+            self.thread_id = thread_id
+            super().__init__(timeout = timeout)
+
+        @discord.ui.button(label = "Cancel", style = discord.ButtonStyle.gray)
+        #order of interaction and button need to be swapped from example. Maybe because of Nextcord vs. discord.py differences
+        async def gray_button(self, interaction:discord.Interaction, button:discord.ui.Button):
+            await interaction.response.defer()
+            await interaction.followup.edit_message(message_id = interaction.message.id, view = None)
+            await interaction.channel.edit(locked = True)
+            await interaction.followup.send(content = "You have cancelled the match submission. This channel is now locked.")
+            del match_dict[self.thread_id]
+
+        @discord.ui.button(label = "Edit Match", style = discord.ButtonStyle.blurple)
+        async def blurple_button(self, interaction:discord.Interaction, button:discord.ui.Button):
+            await interaction.response.defer()
+            await interaction.followup.edit_message(message_id = interaction.message.id, view = None)
+            await interaction.followup.send(content = "<@{}>\nWho played in this match?".format(interaction.user.id), view = PlayerSelection())
+
+        @discord.ui.button(label = "Continue", style = discord.ButtonStyle.green)
+        async def green_button(self, interaction:discord.Interaction, button:discord.ui.Button):
+            await interaction.response.send_message(content = "Preview:", embed = match_dict[self.thread_id]["embed"]["name"], view = MatchConfirmation(thread_id=self.thread_id))
+
+
     class MatchDetails(discord.ui.Modal, title = "Match Submission"):
         def __init__(self, thread_id, *args, **kwargs) -> None:
             self.thread_id = thread_id
@@ -105,13 +131,26 @@ def bot_test():
                 player_scores_not_numeric = ", ".join([score for score in player_scores if not score.isdigit()])
                 await interaction_response.send_message('I could not understand the following score(s): `{}`. Please try again.\n\nWho played in this match?'.format(player_scores_not_numeric),view=PlayerSelection())
                 return
-            if sum([int(player_score) for player_score in player_scores]) != 96:
-                await interaction_response.send_message('The listed scores (`{}`) do not add to 96 please try again. If there was a penalty, please contact a mod to submit the score. Otherwise, submit the match now.\n\nWho played in this match?'.format(', '.join(player_scores)),view=PlayerSelection())
-                return
+            player_score_total = sum([int(player_score) for player_score in player_scores])
             for i in range(len(match_dict[thread_id]["Players"])):
                 player = match_dict[thread_id]["Players"][i]["Name"]
                 match_dict[thread_id]["Players"][i]["Score"] = player_scores[i]
             self.build_embed()
+            if player_score_total != 96:
+                if player_score_total > 96:
+                    await interaction_response.send_message('The listed scores (`{}`) add to {}. This is more than the expected total of 96. Please fix the scores and try again.\n\nWho played in this match?'.format(', '.join(player_scores), 
+                                                                                                                                                                                                                        player_score_total),
+                                        view=PlayerSelection())
+                elif (player_score_total % 6) == 0:
+                    total_tracks = int(player_score_total / 6)
+                    await interaction_response.send_message(':warning: The listed scores (`{}`) indicate that you only played {} tracks instead of the usual 16. What do you want to do?'.format(', '.join(player_scores), 
+                                                                                                                                       total_tracks),
+                                                            view=LowTracksConfirmation(thread_id = interaction.channel.id))
+                else:
+                    await interaction_response.send_message('The listed scores (`{}`) add to {}. This is not possible without penalties. If there was a penalty, please contact a mod to submit the score. Otherwise, please fix the scores and submit the match now.\n\nWho played in this match?'.format(', '.join(player_scores), 
+                                                                                                                                                                                                                                         player_score_total),
+                                                            view=PlayerSelection())
+                return
             await interaction_response.send_message(content = "Preview:", embed = match_dict[thread_id]["embed"]["name"], view = MatchConfirmation(thread_id=thread_id))
 
     class PlayerSelection(discord.ui.View):
