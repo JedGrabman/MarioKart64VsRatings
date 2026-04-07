@@ -55,8 +55,7 @@ vsData = setRefClass("vsData",
                        },
                        create_match_df = function(players, race_points){
                          players = .self$dealias(players)
-                         race_points_total = sum(race_points)
-                         race_count = race_points_total / POINTS_PER_RACE
+                         race_count = ceiling(sum(race_points) / POINTS_PER_RACE)
                          # place points rewards focusing on match rank,
                          # so scale with match progress
                          if (race_count < 4){
@@ -68,6 +67,7 @@ vsData = setRefClass("vsData",
                          }
                          # points per opponent you beat (rank handles ties by splitting points)
                          place_points = place_points_per_opponent * (rank(race_points) - 1)
+                         # Penalty points not implemented yet
                          penalty_points = rep(0, 4)
                          total_points = race_points + place_points + penalty_points
                          match_id = .self$max_match_id + 1L
@@ -88,19 +88,25 @@ vsData = setRefClass("vsData",
                            match_level_row_idx = nrow(match_level_data) + 1
                            .self$match_level_data[match_level_row_idx,] = list(match_df$MatchId[1], match_date, "Loading")
                            total_race_points = sum(match_df$RacePoints)
-                           if (((total_race_points %% POINTS_PER_RACE) == 0) & 
-                               (total_race_points > 0) &
+                           if ((total_race_points > 0) &
                                (total_race_points <= RACE_POINTS_PER_MATCH) &
                                all(match_df$Player %in% .self$registered_players)){
-                             if (sum(match_df$RacePoints) != RACE_POINTS_PER_MATCH){
-                               warning(paste("MatchId", 
-                                             match_df$MatchId[1], 
-                                             "has race points that do not sum to", 
-                                             RACE_POINTS_PER_MATCH))
-                             }
+                             if (total_race_points != RACE_POINTS_PER_MATCH){
+                               warning_message = paste("MatchId", 
+                                                       match_df$MatchId[1], 
+                                                       "has race points that do not sum to", 
+                                                       RACE_POINTS_PER_MATCH)
+                               if ((total_race_points %% POINTS_PER_RACE) != 0){
+                                 warning_message = paste(warning_message, "and has penalties")
+                               }
+                               warning(warning_message)
+                             }   
                              match_level_data[match_level_row_idx,]$Status <<- "Loaded"
                            } else {
                              match_level_data[match_level_row_idx,]$Status <<- "Invalid"
+                             warning(paste("MatchId", 
+                                           match_df$MatchId[1], 
+                                           "has invalid data"))
                            }
                            .self$player_results = rbind(.self$player_results, match_df)
                          }
@@ -163,7 +169,7 @@ vsData = setRefClass("vsData",
                                                  player_1 = as.character(),
                                                  player_2 = as.character(),
                                                  score = as.double())
-                         possible_points_per_opponent = sum(match_and_status_df$RacePoints + match_and_status_df$PlacePoints) / 6
+                         possible_points_per_opponent = ceiling(sum(match_and_status_df$RacePoints + match_and_status_df$PlacePoints) / POINTS_PER_RACE)
                          total_possible_points = 3 * possible_points_per_opponent
                          for(player_idx in c(1:nrow(match_and_status_df))){
                            player_df = match_and_status_df[player_idx,]
