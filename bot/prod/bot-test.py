@@ -2,6 +2,7 @@ import discord
 import datetime
 import secrets_bot
 import gspread
+import math
 from zoneinfo import ZoneInfo
 from discord.ext import commands 
 
@@ -146,7 +147,7 @@ def bot_test():
                     return
                 warning_message = warning_message + " This indicates that:"
                 if player_score_total <= 90:
-                    total_tracks = int(player_score_total / 6)
+                    total_tracks = int(math.ceil(player_score_total / 6))
                     warning_message = warning_message + '\n* you only played {} tracks instead of the usual 16'.format(total_tracks)
                 if (player_score_total % 6) != 0:
                     penalty_points = 6 - (player_score_total % 6)
