@@ -65,7 +65,7 @@ def bot_test():
             worksheet.append_rows(match_summary_matrix)
             del match_dict[self.thread_id]
 
-    class LowTracksConfirmation(discord.ui.View):
+    class AbnormalResultsConfirmation(discord.ui.View):
         def __init__(self, thread_id,*, timeout = 180):
             self.results_channel = secrets_bot.get_results_channel()
             self.thread_id = thread_id
@@ -80,7 +80,7 @@ def bot_test():
             await interaction.followup.send(content = "You have cancelled the match submission. This channel is now locked.")
             del match_dict[self.thread_id]
 
-        @discord.ui.button(label = "Edit Match", style = discord.ButtonStyle.blurple)
+        @discord.ui.button(label = "Edit Results", style = discord.ButtonStyle.blurple)
         async def blurple_button(self, interaction:discord.Interaction, button:discord.ui.Button):
             await interaction.response.defer()
             await interaction.followup.edit_message(message_id = interaction.message.id, view = None)
@@ -137,19 +137,23 @@ def bot_test():
                 match_dict[thread_id]["Players"][i]["Score"] = player_scores[i]
             self.build_embed()
             if player_score_total != 96:
+                warning_message = ':warning: The listed scores (`{}`) add to {}.'.format(', '.join(player_scores), 
+                                                                                        player_score_total)
                 if player_score_total > 96:
-                    await interaction_response.send_message('The listed scores (`{}`) add to {}. This is more than the expected total of 96. Please fix the scores and try again.\n\nWho played in this match?'.format(', '.join(player_scores), 
-                                                                                                                                                                                                                        player_score_total),
-                                        view=PlayerSelection())
-                elif (player_score_total % 6) == 0:
+                    warning_message = warning_message + ' This is more than the expected total of 96. Please fix the scores and try again.\n\nWho played in this match?'
+                    await interaction_response.send_message(warning_message,
+                                                            view = PlayerSelection())
+                    return
+                warning_message = warning_message + " This indicates that:"
+                if player_score_total <= 90:
                     total_tracks = int(player_score_total / 6)
-                    await interaction_response.send_message(':warning: The listed scores (`{}`) indicate that you only played {} tracks instead of the usual 16. What do you want to do?'.format(', '.join(player_scores), 
-                                                                                                                                       total_tracks),
-                                                            view=LowTracksConfirmation(thread_id = interaction.channel.id))
-                else:
-                    await interaction_response.send_message('The listed scores (`{}`) add to {}. This is not possible without penalties. If there was a penalty, please contact a mod to submit the score. Otherwise, please fix the scores and submit the match now.\n\nWho played in this match?'.format(', '.join(player_scores), 
-                                                                                                                                                                                                                                         player_score_total),
-                                                            view=PlayerSelection())
+                    warning_message = warning_message + '\n* you only played {} tracks instead of the usual 16'.format(total_tracks)
+                if (player_score_total % 6) != 0:
+                    penalty_points = 6 - (player_score_total % 6)
+                    warning_message = warning_message + '\n* the match had {} penalty point(s)'.format(penalty_points)
+                warning_message = warning_message + '\nWhat do you want to do?'
+                await interaction_response.send_message(warning_message,
+                                                        view=AbnormalResultsConfirmation(thread_id = interaction.channel.id))
                 return
             await interaction_response.send_message(content = "Preview:", embed = match_dict[thread_id]["embed"]["name"], view = MatchConfirmation(thread_id=thread_id))
 
