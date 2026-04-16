@@ -32,7 +32,7 @@ for (result_sheet in result_sheets){
       if (!(is.na(match_results[row_idx, col_idx]))){
         match_data_raw = match_results[row_idx:(row_idx + 3),col_idx:(col_idx + 1)]
         players_match = match_data_raw[,1]
-        race_points = match_data_raw[,2]
+        race_points = as.numeric(unlist(match_data_raw[,2]))
         match_date = ymd(match_results[row_idx - 1, col_idx][[1]])
         vs_ratings$insert_new_match(players_match, race_points, match_date)
       }
