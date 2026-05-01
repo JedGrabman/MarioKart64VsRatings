@@ -7,5 +7,6 @@ update_player_name = function(old_name, new_name, vs_ratings){
   vs_ratings$update_history$Player[vs_ratings$update_history$Player == old_name] = new_name
   registered_players = read.delim("RegisteredPlayers.txt", header = FALSE)
   registered_players[registered_players == old_name] = new_name
+  registered_players = sort(registered_players[,1])
   write.table(registered_players, "RegisteredPlayers.txt", quote = FALSE, row.names = FALSE, col.names = FALSE)
 }
