@@ -1,3 +1,4 @@
+source('helper_functions.R')
 library(googlesheets4)
 
 ratings_sheet_URL = "https://docs.google.com/spreadsheets/d/1kF4QJiV2VrxIJC-6ciaQcC1CExTJ5KlRo3MztaN4W_Y/"
@@ -103,11 +104,13 @@ for (month_idx in c(1:nrow(unreported_months))){
 
 last_match_date = max(vs_ratings$match_level_data$MatchDate)
 # Must have played 5 games in last 60 days
+registered_players = get_registered_players()
 active_players = vs_ratings$player_results %>%
                   left_join(vs_ratings$match_level_data,
                             join_by(MatchId)) %>%
                   filter(MatchDate >= last_match_date - 60) %>%
                   filter(Status %in% c("Processed", "Reported")) %>%
+                  filter(Player %in% registered_players) %>%
                   group_by(Player) %>%
                   arrange(desc(MatchDate)) %>%
                   slice(5) %>%
