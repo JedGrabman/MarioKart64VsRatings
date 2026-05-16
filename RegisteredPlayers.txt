@@ -2,6 +2,7 @@
 Alex
 Andrew
 Aria
+Baker
 Ce_Mec
 Cheech°
 Climatee
@@ -10,7 +11,7 @@ Dale
 Dan
 Darien
 David
-Dcourt
+Dcourtwreck
 Denvar
 Dove
 El Sicario
@@ -27,7 +28,7 @@ iMath
 Infa
 JD
 Jed
-JesseK
+joey_volume
 juanto20
 Justase
 Kenshin
@@ -54,6 +55,7 @@ Schlanks
 shadow
 Simon
 Smurfy
+SpacedCowboy
 Ting
 Tom
 TroubleClef
