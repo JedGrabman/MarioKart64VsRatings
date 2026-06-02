@@ -13,4 +13,6 @@ update_player_name = function(old_name, new_name, vs_ratings){
   registered_players[registered_players == old_name] = new_name
   registered_players = sort(registered_players)
   write.table(registered_players, "RegisteredPlayers.txt", quote = FALSE, row.names = FALSE, col.names = FALSE)
+  write.csv(vs_ratings$match_level_data, "match_level_data.csv", row.names = FALSE)
+  write.csv(vs_ratings$player_results, "player_results.csv", row.names = FALSE)
 }
